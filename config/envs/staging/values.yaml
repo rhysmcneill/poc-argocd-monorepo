@@ -1,0 +1,12 @@
+# Staging environment overrides — applies to all clusters in staging, all regions.
+# Inherits from: config/base/values.yaml
+
+replicaCount: 2
+
+logLevel: info
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70

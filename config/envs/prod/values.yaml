@@ -1,0 +1,20 @@
+# Production environment overrides — applies to all clusters in prod, all regions.
+# Inherits from: config/base/values.yaml
+
+replicaCount: 3
+
+logLevel: warn
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi

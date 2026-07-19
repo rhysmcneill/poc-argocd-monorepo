@@ -1,0 +1,114 @@
+---
+# Bootstrap workflow — runs once to seed ArgoCD on a REMOTE cluster.
+#
+# For local minikube development, use the local script instead:
+#   make bootstrap
+#
+#
+# Trigger options:
+#   - Manually via GitHub UI (workflow_dispatch) with a target environment
+#   - Automatically on push to main when bootstrap/ changes
+#
+# What it does:
+#   1. Installs ArgoCD via Helm into the target cluster
+#   2. Applies bootstrap/root-app.yaml — the single seed Application
+#   3. ArgoCD then self-manages everything else from git automatically
+#
+# Required GitHub secrets per environment (Settings → Secrets → Actions):
+#   KUBECONFIG_DEV      — base64-encoded kubeconfig for the dev cluster
+#   KUBECONFIG_STAGING  — base64-encoded kubeconfig for the staging cluster
+#   KUBECONFIG_PROD     — base64-encoded kubeconfig for the prod cluster
+#
+# To encode your kubeconfig:
+#   base64 -w 0 ~/.kube/config
+
+name: Bootstrap ArgoCD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment to bootstrap"
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+  push:
+    branches:
+      - main
+    paths:
+      - "bootstrap/**"
+
+env:
+  ARGOCD_VERSION: "7.8.0"   # Helm chart version — update as needed
+  ARGOCD_NAMESPACE: argocd
+
+jobs:
+  bootstrap:
+    name: Bootstrap ${{ github.event.inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+
+    # Protect prod behind a GitHub environment with required reviewers
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set target environment
+        id: env
+        run: |
+          ENV="${{ github.event.inputs.environment || 'dev' }}"
+          echo "name=${ENV}" >> "$GITHUB_OUTPUT"
+          echo "Bootstrapping environment: ${ENV}"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          ENV="${{ steps.env.outputs.name }}"
+          # Select the right secret based on the environment
+          case "${ENV}" in
+            dev)     echo "${{ secrets.KUBECONFIG_DEV }}"     | base64 -d > ~/.kube/config ;;
+            staging) echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > ~/.kube/config ;;
+            prod)    echo "${{ secrets.KUBECONFIG_PROD }}"    | base64 -d > ~/.kube/config ;;
+          esac
+          chmod 600 ~/.kube/config
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Add ArgoCD Helm repo
+        run: helm repo add argo https://argoproj.github.io/argo-helm && helm repo update
+
+      - name: Install or upgrade ArgoCD
+        run: |
+          helm upgrade --install argocd argo/argo-cd \
+            --version "${{ env.ARGOCD_VERSION }}" \
+            --namespace "${{ env.ARGOCD_NAMESPACE }}" \
+            --create-namespace \
+            --wait \
+            --timeout 5m \
+            --set configs.params."server\.insecure"=true
+
+      - name: Wait for ArgoCD to be ready
+        run: |
+          kubectl rollout status deployment/argocd-server \
+            -n "${{ env.ARGOCD_NAMESPACE }}" \
+            --timeout=3m
+
+      - name: Apply root Application (seed)
+        run: |
+          kubectl apply \
+            -f bootstrap/root-app.yaml \
+            -n "${{ env.ARGOCD_NAMESPACE }}"
+          echo "Root app seeded. ArgoCD now manages everything else from git."
+
+      - name: Wait for root app to sync
+        run: |
+          kubectl wait application/root \
+            -n "${{ env.ARGOCD_NAMESPACE }}" \
+            --for=jsonpath='{.status.sync.status}'=Synced \
+            --timeout=3m

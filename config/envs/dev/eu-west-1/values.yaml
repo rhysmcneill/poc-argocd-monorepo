@@ -1,0 +1,5 @@
+# Dev / eu-west-1 region overrides — applies to all clusters in this region.
+# Inherits from: config/base/values.yaml → config/envs/dev/values.yaml
+
+# Example: set region-specific image registry or endpoint
+# imageRegistry: 123456789.dkr.ecr.eu-west-1.amazonaws.com

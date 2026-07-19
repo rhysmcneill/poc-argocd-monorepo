@@ -1,0 +1,14 @@
+# eks-local-dev cluster overrides — highest priority for this cluster.
+# Inherits from: base → dev → dev/eu-west-1 → (this file)
+
+image:
+  tag: dev-latest
+
+# Local dev: use a lightweight resource profile
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

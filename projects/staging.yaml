@@ -1,0 +1,26 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  description: Staging environment
+  sourceRepos:
+    - https://github.com/rhysmcneill/poc-argocd-monorepo
+  destinations:
+    - server: https://staging-cluster-api.example.com
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: developer
+      description: Read access to staging applications
+      policies:
+        - p, proj:staging:developer, applications, get, staging/*, allow

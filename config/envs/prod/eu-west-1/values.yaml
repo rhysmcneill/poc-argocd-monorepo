@@ -1,0 +1,4 @@
+# Production / eu-west-1 region overrides.
+# Inherits from: config/base/values.yaml → config/envs/prod/values.yaml
+
+# imageRegistry: 123456789.dkr.ecr.eu-west-1.amazonaws.com

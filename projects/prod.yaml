@@ -1,0 +1,29 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  description: Production environment
+  sourceRepos:
+    - https://github.com/rhysmcneill/poc-argocd-monorepo
+  destinations:
+    - server: https://prod-cluster-api.example.com
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  # Prod does not allow automated sync by developers; only CI/CD pipeline roles
+  roles:
+    - name: ci-deployer
+      description: Automated pipeline deploy access
+      policies:
+        - p, proj:prod:ci-deployer, applications, get, prod/*, allow
+        - p, proj:prod:ci-deployer, applications, sync, prod/*, allow
+        - p, proj:prod:ci-deployer, applications, override, prod/*, allow

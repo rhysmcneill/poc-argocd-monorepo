@@ -1,0 +1,8 @@
+# Staging cluster metadata
+env: staging
+region: eu-west-1
+cluster: eks-staging
+
+# Update to actual staging cluster API endpoint
+server: https://staging-cluster-api.example.com
+namespace: example-app

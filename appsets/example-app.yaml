@@ -1,0 +1,88 @@
+---
+# ApplicationSet: example-app
+#
+# Generates one ArgoCD Application per cluster directory containing a cluster.yaml.
+#
+# Value inheritance order (lowest → highest priority):
+#   config/base/values.yaml                              (global defaults)
+#   config/envs/<env>/values.yaml                        (environment overrides)
+#   config/envs/<env>/<region>/values.yaml               (region overrides)
+#   config/envs/<env>/<region>/<cluster>/values.yaml     (cluster overrides)
+#
+# To add a new cluster: create a cluster.yaml in the appropriate directory.
+# To add a new app:     duplicate this file and change `name` and `path`.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: example-app
+  namespace: argocd
+spec:
+  # Use Go templating for richer expressions
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error   # Fail loudly if cluster.yaml is missing a required key
+
+  generators:
+    - git:
+        repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+        revision: HEAD
+        files:
+          # Matches any cluster.yaml at exactly env/region/cluster depth.
+          # The YAML content of each matched file becomes template variables.
+          - path: "config/envs/*/*/*/cluster.yaml"
+
+  template:
+    metadata:
+      # Unique name: <app>-<env>-<cluster>
+      name: "example-app-{{ .env }}-{{ .cluster }}"
+      labels:
+        app: example-app
+        env: "{{ .env }}"
+        region: "{{ .region }}"
+        cluster: "{{ .cluster }}"
+      annotations:
+        # Preserve the generator path for traceability
+        argocd.argoproj.io/manifest-generate-paths: "."
+
+    spec:
+      # Each environment maps to its own AppProject (see projects/)
+      project: "{{ .env }}"
+
+      # Multi-source: chart source + values source (requires ArgoCD >= 2.6)
+      # The 'ref: values' source makes this repo's files available as $values
+      # in the valueFiles list, avoiding fragile relative path traversal.
+      sources:
+        - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+          targetRevision: HEAD
+          path: charts/example-app
+          helm:
+            releaseName: example-app
+            valueFiles:
+              - $values/config/base/values.yaml
+              - "$values/config/envs/{{ .env }}/values.yaml"
+              - "$values/config/envs/{{ .env }}/{{ .region }}/values.yaml"
+              - "$values/config/envs/{{ .env }}/{{ .region }}/{{ .cluster }}/values.yaml"
+            # Skip missing intermediate files rather than erroring —
+            # not every app will have overrides at every hierarchy level
+            ignoreMissingValueFiles: true
+
+        - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+          targetRevision: HEAD
+          ref: values
+
+      destination:
+        server: "{{ .server }}"
+        namespace: "{{ .namespace }}"
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m

@@ -1,0 +1,29 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  description: Development environment
+  sourceRepos:
+    - https://github.com/rhysmcneill/poc-argocd-monorepo
+    # Add any external Helm chart repos here as needed
+  destinations:
+    # Restrict dev project to known dev clusters only
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: developer
+      description: Read-only access to dev applications
+      policies:
+        - p, proj:dev:developer, applications, get, dev/*, allow
+        - p, proj:dev:developer, applications, sync, dev/*, allow

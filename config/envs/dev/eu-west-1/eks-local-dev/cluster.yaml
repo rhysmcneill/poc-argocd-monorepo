@@ -1,0 +1,13 @@
+# Cluster metadata — parsed by the ApplicationSet git files generator.
+# ALL keys here become template variables in the ApplicationSet.
+# Required keys (referenced in appsets/example-app.yaml):
+#   env, region, cluster, server, namespace
+
+env: dev
+region: eu-west-1
+cluster: eks-local-dev
+
+# ArgoCD destination — update `server` to the actual cluster API endpoint.
+# Use https://kubernetes.default.svc for the cluster ArgoCD itself runs on.
+server: https://kubernetes.default.svc
+namespace: example-app

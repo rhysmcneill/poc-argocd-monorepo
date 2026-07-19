@@ -1,0 +1,29 @@
+---
+# Bootstrap entry point — applied automatically by .github/workflows/bootstrap.yaml.
+#
+# This is the ONE seed object that ArgoCD cannot manage itself (chicken-and-egg).
+# The bootstrap workflow installs ArgoCD via Helm, then applies this file.
+# From that point on, ArgoCD manages everything in bootstrap/ (and transitively
+# projects/ and appsets/) automatically via git sync. No further manual steps.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+    targetRevision: HEAD
+    path: bootstrap
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
