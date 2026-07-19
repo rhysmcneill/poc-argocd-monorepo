@@ -2,7 +2,7 @@
 # Inherits from: base → dev → dev/eu-west-1 → (this file)
 
 image:
-  tag: dev-latest
+  tag: "1.27"
 
 # Local dev: use a lightweight resource profile
 resources:
