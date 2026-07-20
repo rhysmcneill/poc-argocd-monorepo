@@ -1,6 +1,6 @@
 # example-app deployment config for eks-local-dev
 # Set enabled: false to pause deployment without removing this file
-enabled: true
+enabled: false
 
 appName: example-app
 env: dev
