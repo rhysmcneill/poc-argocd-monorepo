@@ -1,0 +1,16 @@
+# Observability — eks-local-dev cluster overrides (highest priority)
+grafana:
+  adminPassword: "admin"  # dev only — use ExternalSecrets in staging/prod
+
+prometheus:
+  server:
+    persistentVolume:
+      enabled: false
+
+loki:
+  deploymentMode: SingleBinary
+  singleBinary:
+    replicas: 1
+
+tempo:
+  enabled: true

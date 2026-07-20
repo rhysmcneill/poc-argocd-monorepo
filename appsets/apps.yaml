@@ -1,0 +1,95 @@
+---
+# Single ApplicationSet — deploys apps to clusters based on app-config.yaml files.
+#
+# Discovery: git generator scans for config/envs/*/*/*/*/app-config.yaml
+# Each file represents one (cluster, app) deployment intent.
+#
+# Behaviour:
+#   enabled: true   → Application created with full automated sync
+#   enabled: false  → Application created but sync policy stripped (visible in UI, won't deploy)
+#   file absent     → Application does not exist at all
+#
+# To deploy an app to a cluster:   create config/envs/<env>/<region>/<cluster>/<app>/app-config.yaml
+# To disable without removing:     set enabled: false and push
+# To remove entirely:              delete the app-config.yaml file
+#
+# Value inheritance per Application (lowest → highest priority):
+#   chart repo values.yaml                               (chart author defaults)
+#   config/base/values.yaml                              (global platform overrides)
+#   config/envs/<env>/values.yaml                        (env overrides)
+#   config/envs/<env>/<region>/values.yaml               (region overrides)
+#   config/envs/<env>/<region>/<cluster>/values.yaml     (cluster-wide shared overrides)
+#   config/envs/<env>/<region>/<cluster>/<app>/values.yaml  (per-app cluster overrides)
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+
+  generators:
+    - git:
+        repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+        revision: HEAD
+        files:
+          - path: "config/envs/*/*/*/*/app-config.yaml"
+
+  template:
+    metadata:
+      name: "{{ .appName }}-{{ .env }}-{{ .cluster }}"
+      labels:
+        app: "{{ .appName }}"
+        env: "{{ .env }}"
+        region: "{{ .region }}"
+        cluster: "{{ .cluster }}"
+
+    spec:
+      project: "{{ .env }}"
+
+      sources:
+        # ── Source 1: Helm chart ───────────────────────────────────────────────
+        - repoURL: "{{ .chartRepoURL }}"
+          targetRevision: "{{ .chartVersion }}"
+          path: "{{ .chartPath }}"
+          helm:
+            releaseName: "{{ .appName }}"
+            valueFiles:
+              - $values/config/base/values.yaml
+              - "$values/config/envs/{{ .env }}/values.yaml"
+              - "$values/config/envs/{{ .env }}/{{ .region }}/values.yaml"
+              - "$values/config/envs/{{ .env }}/{{ .region }}/{{ .cluster }}/values.yaml"
+              - "$values/config/envs/{{ .env }}/{{ .region }}/{{ .cluster }}/{{ .appName }}/values.yaml"
+            ignoreMissingValueFiles: true
+
+        # ── Source 2: This repo — provides $values reference ──────────────────
+        - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+          targetRevision: HEAD
+          ref: values
+
+      destination:
+        server: "{{ .server }}"
+        namespace: "{{ .namespace }}"
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+  # Strip automated sync when enabled: false.
+  # The Application still appears in the ArgoCD UI but will not deploy anything.
+  templatePatch: |
+    {{- if not .enabled }}
+    spec:
+      syncPolicy: {}
+    {{- end }}

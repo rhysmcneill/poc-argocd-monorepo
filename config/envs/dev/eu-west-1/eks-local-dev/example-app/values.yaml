@@ -1,0 +1,11 @@
+# example-app — eks-local-dev cluster overrides (highest priority)
+image:
+  tag: "1.27"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

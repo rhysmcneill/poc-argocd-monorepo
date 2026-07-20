@@ -1,15 +1,8 @@
-# Cluster metadata — parsed by the ApplicationSet git files generator.
-# ALL keys here become template variables in the ApplicationSet.
-# Required keys (referenced in appsets/example-app.yaml):
-#   env, region, cluster, server, namespace
+# Cluster metadata — informational reference for this cluster.
+# The ApplicationSet no longer reads this file directly; deployment intent
+# is expressed via app-config.yaml files in each app subdirectory.
 
 env: dev
 region: eu-west-1
 cluster: eks-local-dev
-
-# Pin the chart version for this cluster.
-# Dev typically runs a newer version ahead of staging/prod.
-chartVersion: "0.2.0"
-
 server: https://kubernetes.default.svc
-namespace: example-app

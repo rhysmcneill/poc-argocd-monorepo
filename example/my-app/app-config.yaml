@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# app-config.yaml — per-cluster deployment config for an application
+#
+# WHERE THIS FILE LIVES:
+#   config/envs/<env>/<region>/<cluster>/<appName>/app-config.yaml
+#
+# HOW IT WORKS:
+#   The ApplicationSet generator (appsets/apps.yaml) scans for files matching
+#   config/envs/*/*/*/*/app-config.yaml. Each file it finds results in one
+#   ArgoCD Application being created for that (cluster, app) pair.
+#
+# ENABLING / DISABLING:
+#   enabled: true   → Application created with full automated sync
+#   enabled: false  → Application exists in ArgoCD UI but will not auto-deploy
+#   file absent     → Application does not exist at all
+#
+# TO ADD A NEW APP TO A CLUSTER:
+#   1. Create the directory:  config/envs/<env>/<region>/<cluster>/<appName>/
+#   2. Copy this file into it and fill in the values below
+#   3. Optionally add a values.yaml alongside it for cluster-level overrides
+#   4. Push — ArgoCD picks it up automatically
+#
+# VALUE HIERARCHY (lowest → highest priority):
+#   chart repo values.yaml                                    chart defaults
+#   config/base/values.yaml                                   global overrides
+#   config/envs/<env>/values.yaml                             env overrides
+#   config/envs/<env>/<region>/values.yaml                    region overrides
+#   config/envs/<env>/<region>/<cluster>/values.yaml          cluster shared
+#   config/envs/<env>/<region>/<cluster>/<appName>/values.yaml  ← this app only
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Whether this app should be automatically synced on this cluster
+enabled: true
+
+# Application identity — must match the directory name this file lives in
+appName: my-app
+
+# Cluster context — must match the parent directory path
+env: dev                                   # e.g. dev | staging | prod
+region: eu-west-1                          # e.g. eu-west-1 | us-east-1
+cluster: eks-local-dev                     # must match cluster directory name
+server: https://kubernetes.default.svc    # ArgoCD destination cluster API URL
+
+# Helm chart source
+chartRepoURL: https://github.com/my-org/my-charts-repo
+chartPath: charts/my-app                   # path to the chart within the repo
+chartVersion: HEAD                         # git ref, branch, tag, or semver
+
+# Kubernetes destination
+namespace: my-app                          # namespace to deploy into (created automatically)

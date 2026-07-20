@@ -1,0 +1,14 @@
+# example-app deployment config for eks-local-dev
+# Set enabled: false to pause deployment without removing this file
+enabled: true
+
+appName: example-app
+env: dev
+region: eu-west-1
+cluster: eks-local-dev
+server: https://kubernetes.default.svc
+
+chartRepoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+chartPath: charts/example-app
+chartVersion: HEAD
+namespace: example-app

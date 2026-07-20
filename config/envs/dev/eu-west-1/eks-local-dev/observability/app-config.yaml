@@ -1,0 +1,14 @@
+# Observability deployment config for eks-local-dev
+# Set enabled: false to pause deployment without removing this file
+enabled: true
+
+appName: observability
+env: dev
+region: eu-west-1
+cluster: eks-local-dev
+server: https://kubernetes.default.svc
+
+chartRepoURL: https://github.com/rhysmcneill/poc-helm-monorepo
+chartPath: charts/observability
+chartVersion: HEAD
+namespace: observability
