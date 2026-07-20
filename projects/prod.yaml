@@ -9,7 +9,7 @@ metadata:
 spec:
   description: Production environment
   sourceRepos:
-    - https://github.com/rhysmcneill/poc-argocd-monorepo
+    - "*"  # any repo — deployment intent is controlled via app-config.yaml files
   destinations:
     - server: https://prod-cluster-api.example.com
       namespace: "*"

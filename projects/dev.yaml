@@ -9,8 +9,7 @@ metadata:
 spec:
   description: Development environment
   sourceRepos:
-    - https://github.com/rhysmcneill/poc-argocd-monorepo
-    # Add any external Helm chart repos here as needed
+    - "*"  # any repo — deployment intent is controlled via app-config.yaml files
   destinations:
     # Restrict dev project to known dev clusters only
     - server: https://kubernetes.default.svc
