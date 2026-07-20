@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ARGOCD_NS="argocd"
-ARGOCD_CHART_VERSION="7.8.0"
+ARGOCD_CHART_VERSION="10.1.4"   # Latest stable Helm chart — ships ArgoCD v3.4.5
+ARGOCD_IMAGE_TAG="v3.5.0-rc2"  # Override to 3.5 RC2 for ApplicationSet UI (GA: Aug 4 2026)
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # ── Colours ───────────────────────────────────────────────────────────────────
@@ -33,14 +34,15 @@ info "Adding argo Helm repo..."
 helm repo add argo https://argoproj.github.io/argo-helm --force-update
 helm repo update argo
 
-info "Installing ArgoCD ${ARGOCD_CHART_VERSION} into namespace '${ARGOCD_NS}'..."
+info "Installing ArgoCD chart ${ARGOCD_CHART_VERSION} (image ${ARGOCD_IMAGE_TAG}) into '${ARGOCD_NS}'..."
 helm upgrade --install argocd argo/argo-cd \
   --version "${ARGOCD_CHART_VERSION}" \
   --namespace "${ARGOCD_NS}" \
   --create-namespace \
   --wait \
   --timeout 5m \
-  --set configs.params."server\.insecure"=true
+  --set configs.params."server\.insecure"=true \
+  --set global.image.tag="${ARGOCD_IMAGE_TAG}"
 
 success "ArgoCD installed"
 

@@ -3,69 +3,69 @@
 #
 # Generates one ArgoCD Application per cluster directory containing a cluster.yaml.
 #
-# Value inheritance order (lowest → highest priority):
-#   config/base/values.yaml                              (global defaults)
-#   config/envs/<env>/values.yaml                        (environment overrides)
-#   config/envs/<env>/<region>/values.yaml               (region overrides)
-#   config/envs/<env>/<region>/<cluster>/values.yaml     (cluster overrides)
+# Chart source: external charts repo (separate git repository)
+# Values source: this repo — hierarchical overlay, lowest → highest priority:
+#   1. chart repo values.yaml           (chart author defaults, implicit)
+#   2. config/base/values.yaml          (global platform overrides)
+#   3. config/envs/<env>/values.yaml
+#   4. config/envs/<env>/<region>/values.yaml
+#   5. config/envs/<env>/<region>/<cluster>/values.yaml
 #
-# To add a new cluster: create a cluster.yaml in the appropriate directory.
-# To add a new app:     duplicate this file and change `name` and `path`.
+# Chart version is pinned per cluster via the `chartVersion` field in cluster.yaml,
+# allowing dev to run a newer chart version before promoting to staging/prod.
+#
+# To add a new cluster: create cluster.yaml in config/envs/<env>/<region>/<cluster>/
+# To add a new app:     duplicate this file, update name + chart path
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
   name: example-app
   namespace: argocd
 spec:
-  # Use Go templating for richer expressions
   goTemplate: true
   goTemplateOptions:
-    - missingkey=error   # Fail loudly if cluster.yaml is missing a required key
+    - missingkey=error
 
   generators:
     - git:
         repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
         revision: HEAD
         files:
-          # Matches any cluster.yaml at exactly env/region/cluster depth.
-          # The YAML content of each matched file becomes template variables.
           - path: "config/envs/*/*/*/cluster.yaml"
 
   template:
     metadata:
-      # Unique name: <app>-<env>-<cluster>
       name: "example-app-{{ .env }}-{{ .cluster }}"
       labels:
         app: example-app
         env: "{{ .env }}"
         region: "{{ .region }}"
         cluster: "{{ .cluster }}"
-      annotations:
-        # Preserve the generator path for traceability
-        argocd.argoproj.io/manifest-generate-paths: "."
 
     spec:
-      # Each environment maps to its own AppProject (see projects/)
       project: "{{ .env }}"
 
-      # Multi-source: chart source + values source (requires ArgoCD >= 2.6)
-      # The 'ref: values' source makes this repo's files available as $values
-      # in the valueFiles list, avoiding fragile relative path traversal.
       sources:
-        - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
-          targetRevision: HEAD
-          path: charts/example-app
+        # ── Source 1: Helm chart from the charts repo ──────────────────────────
+        # The chart's own values.yaml is the implicit base.
+        # Our valueFiles below layer on top of it.
+        - repoURL: https://github.com/rhysmcneill/charts  # <-- update to your charts repo
+          targetRevision: "{{ .chartVersion }}"
+          path: "charts/example-app"
           helm:
             releaseName: example-app
+            # valueFiles paths prefixed with $values/ resolve against Source 2 below.
+            # Files are applied in order — later files override earlier ones.
             valueFiles:
               - $values/config/base/values.yaml
               - "$values/config/envs/{{ .env }}/values.yaml"
               - "$values/config/envs/{{ .env }}/{{ .region }}/values.yaml"
               - "$values/config/envs/{{ .env }}/{{ .region }}/{{ .cluster }}/values.yaml"
-            # Skip missing intermediate files rather than erroring —
-            # not every app will have overrides at every hierarchy level
+            # Skip levels that don't have an override file — not every app needs
+            # a value set at every hierarchy level
             ignoreMissingValueFiles: true
 
+        # ── Source 2: This repo — provides $values reference for valueFiles ────
         - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
           targetRevision: HEAD
           ref: values

@@ -7,7 +7,9 @@ env: dev
 region: eu-west-1
 cluster: eks-local-dev
 
-# ArgoCD destination — update `server` to the actual cluster API endpoint.
-# Use https://kubernetes.default.svc for the cluster ArgoCD itself runs on.
+# Pin the chart version for this cluster.
+# Dev typically runs a newer version ahead of staging/prod.
+chartVersion: "0.2.0"
+
 server: https://kubernetes.default.svc
 namespace: example-app

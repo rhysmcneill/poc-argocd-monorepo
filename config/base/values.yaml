@@ -1,5 +1,7 @@
-# Global base values — applied to every cluster in every environment.
-# These are the lowest-priority defaults. Override at env/region/cluster level.
+# Global platform overrides — applied to every cluster in every environment.
+# The chart repo's values.yaml provides the true defaults; this file overrides
+# only what the platform needs to diverge from those chart defaults globally.
+# Keep this file lean — only set values you explicitly want to differ from the chart.
 
 replicaCount: 1
 
@@ -10,7 +12,7 @@ image:
 
 service:
   type: ClusterIP
-  port: 80
+  port: 8080
 
 resources:
   limits:

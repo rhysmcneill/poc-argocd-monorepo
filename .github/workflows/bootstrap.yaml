@@ -43,7 +43,8 @@ on:
       - "bootstrap/**"
 
 env:
-  ARGOCD_VERSION: "7.8.0"   # Helm chart version — update as needed
+  ARGOCD_VERSION: "10.1.4"      # Helm chart version — ships ArgoCD v3.4.5 (latest stable)
+  ARGOCD_IMAGE_TAG: "v3.5.0-rc2" # Override to 3.5 RC2 for ApplicationSet UI (GA: Aug 4 2026)
   ARGOCD_NAMESPACE: argocd
 
 jobs:
@@ -91,7 +92,8 @@ jobs:
             --create-namespace \
             --wait \
             --timeout 5m \
-            --set configs.params."server\.insecure"=true
+            --set configs.params."server\.insecure"=true \
+            --set global.image.tag="${{ env.ARGOCD_IMAGE_TAG }}"
 
       - name: Wait for ArgoCD to be ready
         run: |

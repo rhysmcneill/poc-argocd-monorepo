@@ -1,13 +1,14 @@
 .PHONY: help bootstrap ui password status sync clean
 
 ARGOCD_NS      := argocd
-ARGOCD_VERSION := 7.8.0
+ARGOCD_VERSION := 10.1.4        # Helm chart version — ships ArgoCD v3.4.5 (latest stable)
+ARGOCD_IMAGE   := v3.5.0-rc2   # Override to 3.5 RC2 for ApplicationSet UI (GA: Aug 4 2026)
 ARGOCD_PORT    := 8080
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-bootstrap: ## Install ArgoCD on minikube and seed the root Application
+bootstrap: ## Install ArgoCD 3.5 RC (chart 10.1.4 + image override) and seed the root Application
 	@bash scripts/bootstrap-minikube.sh
 
 ui: ## Port-forward the ArgoCD UI to localhost:$(ARGOCD_PORT)
