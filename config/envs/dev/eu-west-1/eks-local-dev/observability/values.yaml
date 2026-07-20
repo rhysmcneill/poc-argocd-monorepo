@@ -9,6 +9,7 @@ prometheus:
 
 loki:
   deploymentMode: SingleBinary
+  useTestSchema: true  # skips schema_config requirement — dev/testing only
   singleBinary:
     replicas: 1
 
