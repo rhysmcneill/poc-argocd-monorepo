@@ -1,0 +1,5 @@
+apiVersion: v2
+name: empty
+description: Intentionally empty chart — used by the ApplicationSet when autoSync is false to prune all deployed resources
+type: application
+version: 0.1.0

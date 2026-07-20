@@ -1,6 +1,6 @@
 # Observability deployment config for eks-local-dev
 # Set enabled: false to pause deployment without removing this file
-enabled: false
+autoSync: false
 
 appName: observability
 env: dev

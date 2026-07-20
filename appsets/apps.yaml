@@ -5,13 +5,13 @@
 # Each file represents one (cluster, app) deployment intent.
 #
 # Behaviour:
-#   enabled: true   → Application created with full automated sync
-#   enabled: false  → Application created but sync policy stripped (visible in UI, won't deploy)
-#   file absent     → Application does not exist at all
+#   autoSync: true   → Application deployed with full automated sync
+#   autoSync: false  → Cluster resources pruned, Application object remains in UI (0 resources)
+#   file absent      → Application object deleted entirely
 #
-# To deploy an app to a cluster:   create config/envs/<env>/<region>/<cluster>/<app>/app-config.yaml
-# To disable without removing:     set enabled: false and push
-# To remove entirely:              delete the app-config.yaml file
+# To deploy an app to a cluster:          create config/envs/<env>/<region>/<cluster>/<app>/app-config.yaml
+# To disable and clean up resources:      set autoSync: false and push
+# To remove Application from ArgoCD UI:   delete the app-config.yaml file and push
 #
 # Value inheritance per Application (lowest → highest priority):
 #   chart repo values.yaml                               (chart author defaults)
@@ -86,10 +86,27 @@ spec:
             factor: 2
             maxDuration: 3m
 
-  # Strip automated sync when enabled: false.
-  # The Application still appears in the ArgoCD UI but will not deploy anything.
+  # When autoSync: false, redirect the Application to the empty chart and keep
+  # prune: true. ArgoCD syncs, renders zero resources, and prunes everything
+  # that was previously deployed. The Application object remains visible in the
+  # UI (showing 0 resources) but the cluster is fully cleaned up.
+  # To remove the Application object itself: delete the app-config.yaml file.
   templatePatch: |
-    {{- if not .enabled }}
+    {{- if not .autoSync }}
     spec:
-      syncPolicy: {}
+      sources:
+        - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+          targetRevision: HEAD
+          path: charts/empty
+          helm:
+            releaseName: "{{ .appName }}"
+        - repoURL: https://github.com/rhysmcneill/poc-argocd-monorepo
+          targetRevision: HEAD
+          ref: values
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
     {{- end }}

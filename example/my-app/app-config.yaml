@@ -10,15 +10,18 @@
 #   ArgoCD Application being created for that (cluster, app) pair.
 #
 # ENABLING / DISABLING:
-#   enabled: true   → Application created with full automated sync
-#   enabled: false  → Application exists in ArgoCD UI but will not auto-deploy
-#   file absent     → Application does not exist at all
+#   autoSync: true   → Application deployed with full automated sync
+#   autoSync: false  → Kubernetes resources pruned, Application visible in ArgoCD UI with 0 resources
+#   file absent      → Application object removed from ArgoCD entirely
 #
 # TO ADD A NEW APP TO A CLUSTER:
 #   1. Create the directory:  config/envs/<env>/<region>/<cluster>/<appName>/
 #   2. Copy this file into it and fill in the values below
 #   3. Optionally add a values.yaml alongside it for cluster-level overrides
 #   4. Push — ArgoCD picks it up automatically
+#
+# TO REMOVE AN APP AND ITS RESOURCES:
+#   Delete this file and push — ArgoCD will prune the Application and all resources
 #
 # VALUE HIERARCHY (lowest → highest priority):
 #   chart repo values.yaml                                    chart defaults
@@ -30,7 +33,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Whether this app should be automatically synced on this cluster
-enabled: true
+autoSync: true
 
 # Application identity — must match the directory name this file lives in
 appName: my-app
